@@ -24,8 +24,8 @@ public class DB {
 				throw new DbException(e.getMessage());
 			}
 			
-		}
-		return conn;
+			}
+			return conn;
 	}
 	
 	public static void closeConnection() {
