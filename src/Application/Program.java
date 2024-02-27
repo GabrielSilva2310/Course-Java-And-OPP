@@ -9,6 +9,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
 import db.DB;
+import db.DbException;
 import db.DbIntegrityException;
 
 public class Program {
@@ -16,43 +17,30 @@ public class Program {
 	public static void main(String[] args) {
 		
 		Connection conn=null;
-		PreparedStatement st=null;
+		Statement st=null;
 		
 		try {
-			
 			conn=DB.getConnection();
+			conn.setAutoCommit(false);
+			st=conn.createStatement();
 			
-			st=conn.prepareStatement(
-					"insert into department (Name) values ('D1'),('D2')"
-					,Statement.RETURN_GENERATED_KEYS);
+			int rows1=st.executeUpdate("UPDATE seller SET BaseSalary = 3000 WHERE departmentId = 1");
 			
-			int RowsSuccess=st.executeUpdate();
+			int rows2=st.executeUpdate("UPDATE seller SET BaseSalary = 2500 WHERE departmentId = 2");
 			
-			if(RowsSuccess>0) {
-				ResultSet rs=st.getGeneratedKeys();
-				while(rs.next()) {
-					int id=rs.getInt(1);
-					System.out.println("Done! ID="+id);
-				}
-			}
-			else {
-				System.out.println("No Rows Affect");
-			}
+			conn.commit();
+		
+			System.out.println("Rows Affected:"+rows1);
+			System.out.println("Rows Affected:"+rows2);
 			
-			st=conn.prepareStatement(
-					"DELETE FROM department "
-					+"WHERE "
-					+"Id = ?"
-					);
-			
-			st.setInt(1, 6);
-			
-			int rowsAffected=st.executeUpdate();
-			
-			System.out.println("Done! Rows Affected:"+rowsAffected);
 		}
 		catch(SQLException e) {
-			throw new DbIntegrityException(e.getMessage());
+			try {
+				conn.rollback();
+				throw new DbException("Transaction Rolled back ! Caused by:"+e.getMessage());
+			} catch (SQLException e1) {
+				throw new DbException("Error trying rollback! Caused by:"+e.getMessage());
+			}
 		}
 		finally {
 			DB.closeStatement(st);
